@@ -58,3 +58,48 @@ print(f"  Decomposed into {len(f0_world)} frames\n")
 
 
 
+print("Replacing WORLD's pitch estimate with CREPE's...")
+ 
+# CREPE's time grid 
+time_crepe_grid = np.arange(len(f0_crepe)) * (512 / sr)
+ 
+f0_crepe_interp = np.interp(t_world, time_crepe_grid, f0_crepe)
+ 
+# Only replace frames where BOTH CREPE and WORLD agree there's singing
+voiced_both = (f0_crepe_interp > 0) & (f0_world > 0)
+f0_combined = f0_world.copy()
+f0_combined[voiced_both] = f0_crepe_interp[voiced_both]
+ 
+print(f"  Replaced {np.sum(voiced_both)} voiced frames with CREPE estimates\n")
+ 
+
+
+
+#here we are shifting the pitch to hopefully have a harmony!!
+
+SEMITONES = 7  # perfect 5th- apparently this sounds the best
+
+ratio = 2 ** (SEMITONES / 12.0)
+print(f"Step 5: Shifting pitch by {SEMITONES} semitones (perfect 5th)")
+print(f"  Frequency ratio: {ratio:.4f}x")
+print(f"  e.g. if Papa sings 220 Hz -> harmony is {220 * ratio:.1f} Hz\n")
+ 
+f0_harmony = f0_combined.copy()
+f0_harmony[f0_harmony > 0] *= ratio  # only shift voiced frames
+
+
+#now we put them all back together...
+print("Step 6: Resynthesizing harmony voice with WORLD...")
+harmony = pw.synthesize(
+    f0_harmony.astype(np.float64),
+    sp.astype(np.float64),
+    ap.astype(np.float64),
+    sr
+).astype(np.float32)
+print(f"  Synthesized {len(harmony)/sr:.2f} seconds of harmony audio\n")
+
+
+
+
+#adding the two signals together and save. 
+# we turn down the volume of the harmony so it doesnt sound too messy....
