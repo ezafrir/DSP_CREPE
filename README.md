@@ -59,4 +59,4 @@ In `harmonize.py`, change the `SEMITONES` variable to try different intervals!!
 | 7 | Perfect 5th |
 | 12 | Octave above |
 | -5 | Perfect 4th below |
-| -12 | Octave below |
+| -12 | Octave below (I also like this one)|
