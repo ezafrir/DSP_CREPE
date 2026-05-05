@@ -31,3 +31,30 @@ print(f"  Pitch range: {f0_crepe[f0_crepe > 0].min():.1f} Hz "
 print("Decomposing audio with WORLD vocoder...")
 print("  Separating: pitch | timbre | breathiness")
 #vocoder separates voice signal into individual components to manipuulate
+
+
+
+x = audio.astype(np.float64)
+ 
+# dio() = Distributed Inline-filter Operation
+#estimates fundamental freq f0 fast
+f0_world, t_world = pw.dio(x, sr)
+ 
+# stonemask() refines the rough dio() estimate
+f0_world = pw.stonemask(x, f0_world, t_world, sr)
+ 
+# cheaptrick() extracts the spectral envelope (timbre)
+#basically the shape of the voice and what makes someone sound like themselves
+sp = pw.cheaptrick(x, f0_world, t_world, sr)
+ 
+# d4c() extracts aperiodicity (how noisy each frame is)
+ap = pw.d4c(x, f0_world, t_world, sr)
+ 
+print(f"  Decomposed into {len(f0_world)} frames\n")
+
+
+
+
+
+
+
