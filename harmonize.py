@@ -6,14 +6,14 @@ import pyworld as pw
 
 #librosa.load() reads the .wav file and returns audio in an array & sample rate
 print("Loading audio...")
-audio, sr = librosa.load("papas_magalitriti.wav", sr=22050, mono=True)
+audio, sr = librosa.load("papas_megalitriti.wav", sr=22050, mono=True)
  # 22050 samples per second
 duration = len(audio) / sr
 print(f"  Loaded! {duration:.2f} seconds of audio at {sr} Hz")
 print(f"  That's {len(audio):,} individual samples\n")
 
 print("Extracting pitch with CREPE...")
-print("  (First run will download model weights...)") #for neural net
+print("(First run will download model weights...)") #for neural net
 time_crepe, f0_crepe, confidence, _ = crepe.predict(audio, sr, viterbi=True, verbose=1)
 # time_crepe is array of timestamps
 # f0 is array of freqs in hz at each timestamp
@@ -29,7 +29,7 @@ print(f"  Pitch range: {f0_crepe[f0_crepe > 0].min():.1f} Hz "
       f"— {f0_crepe[f0_crepe > 0].max():.1f} Hz\n")
 
 print("Decomposing audio with WORLD vocoder...")
-print("  Separating: pitch | timbre | breathiness")
+print("Separating: pitch | timbre | breathiness")
 #vocoder separates voice signal into individual components to manipuulate
 
 
@@ -70,19 +70,21 @@ voiced_both = (f0_crepe_interp > 0) & (f0_world > 0)
 f0_combined = f0_world.copy()
 f0_combined[voiced_both] = f0_crepe_interp[voiced_both]
  
-print(f"  Replaced {np.sum(voiced_both)} voiced frames with CREPE estimates\n")
+print(f"Replaced {np.sum(voiced_both)} voiced frames with CREPE estimates\n")
  
 
 
 
 #here we are shifting the pitch to hopefully have a harmony!!
 
-SEMITONES = 7  # perfect 5th- apparently this sounds the best
+#SEMITONES = 7  # perfect 5th- apparently this sounds the best
+
+SEMITONES = 4  # major 3rd- this sounds better
 
 ratio = 2 ** (SEMITONES / 12.0)
-print(f"Step 5: Shifting pitch by {SEMITONES} semitones (perfect 5th)")
-print(f"  Frequency ratio: {ratio:.4f}x")
-print(f"  e.g. if Papa sings 220 Hz -> harmony is {220 * ratio:.1f} Hz\n")
+print(f"Shifting pitch by {SEMITONES} semitones (perfect 5th)")
+print(f"Frequency ratio: {ratio:.4f}x")
+print(f"e.g. if Papa sings 220 Hz -> harmony is {220 * ratio:.1f} Hz\n")
  
 f0_harmony = f0_combined.copy()
 f0_harmony[f0_harmony > 0] *= ratio  # only shift voiced frames
@@ -96,7 +98,7 @@ harmony = pw.synthesize(
     ap.astype(np.float64),
     sr
 ).astype(np.float32)
-print(f"  Synthesized {len(harmony)/sr:.2f} seconds of harmony audio\n")
+print(f"Synthesized {len(harmony)/sr:.2f} seconds of harmony audio\n")
 
 
 
@@ -104,3 +106,22 @@ print(f"  Synthesized {len(harmony)/sr:.2f} seconds of harmony audio\n")
 #adding the two signals together and save. 
 # we turn down the volume of the harmony so it doesnt sound too messy....
 # normalize so that the combined signal doesnt go over 1 and disappear :(
+
+
+print("Mixing original audio with harmony...")
+ 
+HARMONY_GAIN = 0.7  # harmony volume relative to original
+ 
+n = min(len(audio), len(harmony))
+mixed = audio[:n] + HARMONY_GAIN * harmony[:n]
+ 
+# normalize to keep under 1
+peak = np.max(np.abs(mixed))
+if peak > 1.0:
+    mixed = mixed / peak
+    print(f"  Normalized (peak was {peak:.3f})")
+ 
+output_path = "papas_megalitriti_harmony.wav"
+sf.write(output_path, mixed, sr)
+print(f"\n  Done! Saved to: {output_path}")
+print("Papa now has a harmony singer!\n")
