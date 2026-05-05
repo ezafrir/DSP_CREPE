@@ -89,7 +89,7 @@ f0_harmony[f0_harmony > 0] *= ratio  # only shift voiced frames
 
 
 #now we put them all back together...
-print("Step 6: Resynthesizing harmony voice with WORLD...")
+print("Resynthesizing harmony voice with WORLD...")
 harmony = pw.synthesize(
     f0_harmony.astype(np.float64),
     sp.astype(np.float64),
@@ -103,3 +103,4 @@ print(f"  Synthesized {len(harmony)/sr:.2f} seconds of harmony audio\n")
 
 #adding the two signals together and save. 
 # we turn down the volume of the harmony so it doesnt sound too messy....
+# normalize so that the combined signal doesnt go over 1 and disappear :(
